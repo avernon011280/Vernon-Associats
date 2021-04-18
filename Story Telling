@@ -1,0 +1,238 @@
+---
+output: 
+  html_document:
+    keep_tex: true
+    fig_caption: true
+    latex_engine: htlmlatex
+    number_sections: true
+    toc: true
+    toc_depth: 4
+title: "DatViz 11 Story Telling Plot"
+author: 
+- Andrew Vernon
+
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+geometry: margin=1in
+fontsize: 11pt
+spacing: single
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb, bm}
+- \usepackage{amsfonts}
+- \usepackage{amsthm}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhf{}
+- \rhead{DatViz 11}
+- \cfoot{\thepage}
+- \usepackage{algorithm}
+- \usepackage[noend]{algpseudocode}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r, include=F}
+rm(list=ls(all=T))
+```
+
+```{r,include=F}
+
+library(knitr)
+hook_output <- knit_hooks$get("output")
+knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+
+
+library(ggpubr)
+theme_set(theme_pubr())
+library(mice)
+library(tidyverse)
+library(ggplot2)
+library(gcookbook)
+library(dplyr)
+library(gam)
+library(ncvreg)
+library(factorplot)
+library(corrplot)
+library(lokern)
+library(FNN)
+library(ncvreg)
+library(glmnet)
+library(remotes)
+library(devtools)
+library(dataMaid)
+library(ggpubr)
+library(gplots)
+library(VIM)
+library(kernlab)
+library(smacof)
+library(Rtsne)
+library(MASS)
+library(verification)
+library(cvAUC)
+library(rpart)
+library(ipred)
+library(randomForest)
+library(MESS)
+library(glmnet)
+library(ada)
+library(cluster)
+library(ggplot2)
+library(reshape2)
+library(graphics)
+library(bestglm)
+library(locpol)
+library(dplyr)
+library(arules)
+library(lattice)
+library(plyr)
+library(DescTools)
+library(devtools)
+library(isofor)
+library(ICSOutlier)
+library(igraph)
+library(mvoutlier)
+library(robustbase)
+library(Rlof)
+library(caret)
+library(car)
+library(dygraphs)
+library(xts)        
+library(lubridate)
+#install.packages("ggExtra")
+library(ggExtra)
+#install.packages("hrbrthemes")
+library(hrbrthemes)
+library(viridis)
+#install.packages("lubridate")
+library(lubridate)
+library(vcd)
+#install.packages("deSolve")
+library(deSolve)
+#install.packages("gtrendsR")
+library(gtrendsR)
+#install.packages("gganimate")
+library(gganimate)
+library(hrbrthemes)
+```
+
+```{r, include=FALSE}
+dat<-read.csv("CSV_HCV1.csv", header=T)
+```
+
+# $\underline{Step\ 1}$
+
+The data used for this activity is comprised of de-identified Hepatitis C patient encounter records. Patients were screened at a local health facility within the Paso Del Norte region. The dataset is comprised of 564 entries and 17 variables. A quick look at the data shows several questionable inputs, these will require re-coding to be more useable when creating a data viz.
+
+Adjustments were done to the race and ethnicity variables. These variables were collapsed into one, resulting in a joint variable (i.e. White_non_His). In addition to this, the gender (Male & Female) were re-coded as (0 & 1). It is also noted that several of the values entered comprise of both an alpha and numeric response (0-No / 1-Yes), these must be re-coded to numeric values only. All variable responses with similar characteristics should be addressed similarly. A final step in addressing some of the ambiguity within the dataset was conducted to collapse several of the levels, limiting the variables to a positive or negative response only.
+
+A closer look at the full dataset also shows several missing data (NA’s). To address this issue, A count of all missing values. To accomplish this, the (R code1) provided below can be used. A Multivariate Imputation by Chained Equations “MICE” function. This allows for the replacement of missing values (imputation). MICE does this by populating the missing values (NA’s) by cross-referencing them with the adjacent values captured within the entire data set. This can be done with the (R code 1) provided below.
+
+(R − Code 1)
+
+```{r, include=F}
+fit.mice <- mice(dat , m=2, maxit = 5, method = 'pmm', seed = 500)
+dat <- complete(fit.mice,1)
+dat[1:10,]
+dat1<-dat
+dat1$Date<-as.Date(dat1$Date)
+dat1$RNA.Test<-as.factor(dat1$RNA.Test)
+
+```
+
+# $\underline{Step\ 2}$
+
+## Association Plots
+
+As a low-level visualization, for this assignment a association plot was produced. This plot provides a visual representation of each level, allowing for the visualization of any concerns /abnormalities that may have occurred in the variable. Any noted abnormalities will be addressed at this point, and we will restart at step 1. From the heatplot below, we can see repationships between the variables.
+
+```{r}
+plot(dat)
+```
+
+# $\underline{Step\ 3}$
+
+This assignment evaluated five health centers (N=5) and the flow of patients that visited each site. Tufte’s Principles will be utilized to produce a well-accepted data visualization (DataViz).
+
+The story to be told - In reference to the data set presented below, the DataViz will focus on telling the story of the number of patients counted/visited at five local health centers, over the first three years of the program’s implementation. The plot below shows an animated bar plot of HCV patients per health center. 
+
+# $\underline{Step\ 4}$
+
+## First
+
+To achieve “Graphical Integrity” (GI), all variations/manipulations to the dataset has been documented and articulated in this publication/presentation. All data formatting steps is presented along with its subsequent coding. Keeping in line with GI, all scales are clearly legible (i.e. labeled margins and scales will start from 0).
+
+### Second
+
+Specific attention was paid to the layering of the variables. Precisely, several graphic devices were used to separate the categories. In addition to this, the layers were applied in a hierarchy approach to reduce confusion in the story being told. For this specific assignment, the graphs were layered to show HCV incidence per site in a hierarchy manner. Keen attention was paid to the color schemes and scale. An extra emphasis was placed on depicting small changes within the data. As we come to the end of this assignment a focus is be placed on the “Parallelism” of the datviz. A focus on isomorphism and visual juxtapositions revealing connectionshas been layered in to the animation plots below.   
+
+As in the past to avoided “Chart-junk”, a cookbook approach to datviz was first utilized to develop sound graphs. Once the graph was developed, a more inventive/liberal approach to datviz was applied. Specifically focusing on visual noise reduction, which may disrupt the story that is being told.
+
+# $\underline{Step\ 5}$
+
+## Story
+
+```{r}
+a<-ggplot(data=dat1, aes(x=Site.Name, Client.ID..Unique..., fill=Site.Name))+ 
+  geom_bar(stat="identity") +
+  theme(legend.position = "none", axis.text.y=element_blank(), 
+  axis.title.y=element_blank())+
+  geom_text(aes(label=Site.Name), vjust=1, hjust=-0.1, color="black", size=3.5) +
+  coord_flip() +
+  transition_time(Date) +
+  ease_aes('sine-in-out')
+
+animate(a, duration = 100, fps = 2, nframes = 10)
+
+```
+
+### Story Bar Plot Improved
+
+A grid background was added, to improve the plot. This allows for visualization of the scale of data. In addition to this, a title, X and Y labels, and a legend were added to assist the reading of the plot. The layering of a count was added to the bar representation of each site as it progresses into time. 
+
+```{r}
+a<-ggplot(data=dat1, aes(x=Site.Name, Client.ID..Unique..., fill=Site.Name))+ 
+  geom_bar(stat="identity") +
+  theme_bw()+
+  geom_text(aes(label=Client.ID..Unique...), vjust=1, hjust=-0.1, color="black", size=3.5) +
+  coord_flip() +
+  labs(title = 'Patient Flow Per Site - Date: {frame_time}', x="Health Center(s)", y = "Patient Count By Site") +
+  transition_time(Date) +
+  ease_aes('sine-in-out')
+
+animate(a, duration = 235, fps = 2, nframes = 1)
+```
+
+#### Story Plot Improved 2 
+
+An animated line plot was generated as an alternative to the bar plot. While the below graph provides a more accurate visualized change in the flow of patients per health center. The layering applied to the bar plot allows for the story of "patient flow" to be more easily visualized. 
+
+```{r}
+ggplot(data=dat1, aes(x=Site.Name, Client.ID..Unique..., fill=Site.Name))+
+    geom_line() +
+    geom_point() +
+    scale_color_viridis(discrete = F) +
+    ggtitle('Patient Flow Per Site') +
+    theme_ipsum() +
+    ylab("Patient Count By Site") +
+    transition_reveal(Date)
+```
+
